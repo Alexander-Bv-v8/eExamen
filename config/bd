@@ -1,0 +1,323 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 05-05-2024 a las 02:50:20
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de datos: `fitness2`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `jornadas`
+--
+
+CREATE TABLE `jornadas` (
+  `id_jornada` int(11) NOT NULL,
+  `id_usuario` int(11) DEFAULT NULL,
+  `fecha` date DEFAULT NULL,
+  `id_registro_peso` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Disparadores `jornadas`
+--
+DELIMITER $$
+CREATE TRIGGER `actualizar_peso_fin` AFTER UPDATE ON `jornadas` FOR EACH ROW BEGIN
+    DECLARE cliente_id INT;
+    -- Obtener el ID de cliente asociado a la jornada
+    SET cliente_id = (SELECT id_cliente FROM Jornadas WHERE id_jornada = NEW.id_jornada);
+    
+    -- Actualizar el registro de peso al final de la jornada
+    UPDATE Registro_Peso
+    SET peso_kg_fin = (SELECT peso_kg FROM Clientes WHERE id_cliente = cliente_id)
+    WHERE id_cliente = cliente_id AND fecha_registro = NEW.fecha;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `registrar_peso_inicio` AFTER INSERT ON `jornadas` FOR EACH ROW BEGIN
+    -- Insertar nuevo registro de peso al inicio de la jornada
+    INSERT INTO Registro_Peso (id_cliente, peso_kg_inicio, fecha_registro)
+    VALUES (NEW.id_cliente, (SELECT peso_kg FROM Clientes WHERE id_cliente = NEW.id_cliente), NEW.fecha);
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `jornada_rutinas`
+--
+
+CREATE TABLE `jornada_rutinas` (
+  `id_jornada_rutina` int(11) NOT NULL,
+  `id_jornada` int(11) NOT NULL,
+  `id_rutina` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `registro_peso`
+--
+
+CREATE TABLE `registro_peso` (
+  `id_registro` int(11) NOT NULL,
+  `id_usuario` int(11) DEFAULT NULL,
+  `peso_kg_inicio` decimal(5,2) DEFAULT NULL,
+  `peso_kg_fin` decimal(5,2) DEFAULT NULL,
+  `fecha_registro` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `rol_usuario`
+--
+
+CREATE TABLE `rol_usuario` (
+  `id_rol` int(11) NOT NULL,
+  `nombre` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `rol_usuario`
+--
+
+INSERT INTO `rol_usuario` (`id_rol`, `nombre`) VALUES
+(1, 'Administrador'),
+(2, 'Clientes');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `rutinas`
+--
+
+CREATE TABLE `rutinas` (
+  `id_rutina` int(11) NOT NULL,
+  `id_jornada` int(11) DEFAULT NULL,
+  `id_tipo_rutina` int(11) DEFAULT NULL,
+  `duracion` time DEFAULT NULL,
+  `distancia_recorrida` decimal(8,2) DEFAULT NULL,
+  `calorias` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tipo_rutina`
+--
+
+CREATE TABLE `tipo_rutina` (
+  `id_tipo_rutina` int(11) NOT NULL,
+  `tipo` varchar(100) DEFAULT NULL,
+  `grupo_muscular` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `tipo_rutina`
+--
+
+INSERT INTO `tipo_rutina` (`id_tipo_rutina`, `tipo`, `grupo_muscular`) VALUES
+(1, 'Sentadillas', 'Piernas'),
+(2, 'Press de banca', 'Pecho'),
+(3, 'Flexiones de pecho', 'Pecho'),
+(4, 'Crunches', 'Abdomen'),
+(5, 'Curl de bíceps', 'Brazos'),
+(6, 'Press de tríceps en polea', 'Tríceps'),
+(7, 'Caminadora', 'Cardio'),
+(8, 'Bicicleta estática', 'Cardio');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuarios`
+--
+
+CREATE TABLE `usuarios` (
+  `id_usuario` int(11) NOT NULL,
+  `usuario` varchar(60) NOT NULL,
+  `password` varchar(60) NOT NULL,
+  `id_rol` int(11) DEFAULT NULL,
+  `nombre` varchar(60) DEFAULT NULL,
+  `apellido` varchar(60) DEFAULT NULL,
+  `edad` int(11) DEFAULT NULL,
+  `estatura` int(2) NOT NULL,
+  `direccion` varchar(255) DEFAULT NULL,
+  `correo` varchar(100) DEFAULT NULL,
+  `telefono` varchar(15) DEFAULT NULL,
+  `foto` varchar(255) NOT NULL,
+  `fecha_inicio_inscripcion` timestamp NULL DEFAULT current_timestamp(),
+  `fecha_final_inscripcion` timestamp NULL DEFAULT NULL,
+  `estado` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `usuarios`
+--
+
+INSERT INTO `usuarios` (`id_usuario`, `usuario`, `password`, `id_rol`, `nombre`, `apellido`, `edad`, `estatura`, `direccion`, `correo`, `telefono`, `foto`, `fecha_inicio_inscripcion`, `fecha_final_inscripcion`, `estado`) VALUES
+(1, 'admin', '$2y$10$F0J8k.lFjgGAK6I/tcbhyuMKSaitXy8ENMSBVZWErIoA6.VSU8MQy', 1, 'Roberto', 'Khalifa', 30, 180, 'La Armenia', 'consultas@fitnessmail.com', '0999999999', '', '2024-01-01 05:00:00', '2024-12-31 05:00:00', 1),
+(2, 'user1', 'user1', 2, 'Cliente Inactivo', 'Apellido Inactivo', 35, 169, 'Dirección Inactiva', 'cliente2@example.com', '987654321', '', '2024-01-01 05:00:00', '2024-12-31 05:00:00', 1),
+(3, 'pedro.lp', '$2y$10$KqQWKP80BuE8.cwbqKEl.Oc9ZvaIU1qHQ3uXCKCqHQBvsxe8Iln3y', 2, 'Pedro', 'Lopéz', 18, 162, 'Quito', 'si@gmail.com', '0984587225', '', '2024-05-04 02:21:45', '2024-05-31 05:00:00', 1),
+(4, 'celary-ch', '$2y$10$OJ10QlBLyYre1MwP/xEXhOTWZGPcsn66SGvOE9wXMc34UmY30D5mm', 2, 'Celary', 'Chiran', 20, 155, 'Puembo', 'nose@xd.com', '0965842165', '', '2024-05-04 04:17:12', '2024-06-04 05:00:00', 1);
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `jornadas`
+--
+ALTER TABLE `jornadas`
+  ADD PRIMARY KEY (`id_jornada`),
+  ADD KEY `id_registro_peso` (`id_registro_peso`),
+  ADD KEY `id_usuario` (`id_usuario`);
+
+--
+-- Indices de la tabla `jornada_rutinas`
+--
+ALTER TABLE `jornada_rutinas`
+  ADD PRIMARY KEY (`id_jornada_rutina`),
+  ADD KEY `id_jornada` (`id_jornada`),
+  ADD KEY `id_rutina` (`id_rutina`);
+
+--
+-- Indices de la tabla `registro_peso`
+--
+ALTER TABLE `registro_peso`
+  ADD PRIMARY KEY (`id_registro`),
+  ADD KEY `id_usuario` (`id_usuario`);
+
+--
+-- Indices de la tabla `rol_usuario`
+--
+ALTER TABLE `rol_usuario`
+  ADD PRIMARY KEY (`id_rol`);
+
+--
+-- Indices de la tabla `rutinas`
+--
+ALTER TABLE `rutinas`
+  ADD PRIMARY KEY (`id_rutina`),
+  ADD KEY `id_jornada` (`id_jornada`),
+  ADD KEY `id_tipo_rutina` (`id_tipo_rutina`);
+
+--
+-- Indices de la tabla `tipo_rutina`
+--
+ALTER TABLE `tipo_rutina`
+  ADD PRIMARY KEY (`id_tipo_rutina`);
+
+--
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id_usuario`),
+  ADD UNIQUE KEY `usuario` (`usuario`),
+  ADD KEY `id_rol` (`id_rol`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `jornadas`
+--
+ALTER TABLE `jornadas`
+  MODIFY `id_jornada` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `jornada_rutinas`
+--
+ALTER TABLE `jornada_rutinas`
+  MODIFY `id_jornada_rutina` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `registro_peso`
+--
+ALTER TABLE `registro_peso`
+  MODIFY `id_registro` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `rol_usuario`
+--
+ALTER TABLE `rol_usuario`
+  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `rutinas`
+--
+ALTER TABLE `rutinas`
+  MODIFY `id_rutina` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `tipo_rutina`
+--
+ALTER TABLE `tipo_rutina`
+  MODIFY `id_tipo_rutina` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `jornadas`
+--
+ALTER TABLE `jornadas`
+  ADD CONSTRAINT `jornadas_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`),
+  ADD CONSTRAINT `jornadas_ibfk_2` FOREIGN KEY (`id_registro_peso`) REFERENCES `registro_peso` (`id_registro`);
+
+--
+-- Filtros para la tabla `jornada_rutinas`
+--
+ALTER TABLE `jornada_rutinas`
+  ADD CONSTRAINT `jornada_rutinas_ibfk_1` FOREIGN KEY (`id_jornada`) REFERENCES `jornadas` (`id_jornada`),
+  ADD CONSTRAINT `jornada_rutinas_ibfk_2` FOREIGN KEY (`id_rutina`) REFERENCES `rutinas` (`id_rutina`);
+
+--
+-- Filtros para la tabla `registro_peso`
+--
+ALTER TABLE `registro_peso`
+  ADD CONSTRAINT `registro_peso_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`);
+
+--
+-- Filtros para la tabla `rutinas`
+--
+ALTER TABLE `rutinas`
+  ADD CONSTRAINT `rutinas_ibfk_1` FOREIGN KEY (`id_jornada`) REFERENCES `jornadas` (`id_jornada`),
+  ADD CONSTRAINT `rutinas_ibfk_2` FOREIGN KEY (`id_tipo_rutina`) REFERENCES `tipo_rutina` (`id_tipo_rutina`);
+
+--
+-- Filtros para la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD CONSTRAINT `usuarios_ibfk_1` FOREIGN KEY (`id_rol`) REFERENCES `rol_usuario` (`id_rol`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
